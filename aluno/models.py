@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -30,11 +31,17 @@ class Aluno(models.Model):
 class Grupo(models.Model):
     nome = models.CharField(max_length=50)
     limite_aluno = models.IntegerField()
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
-    alunos = models.ManyToManyField(Aluno, through='AlunoGrupo')
+    turma = models.ForeignKey("Turma", on_delete=models.CASCADE)
+    alunos = models.ManyToManyField("Aluno")
+    lider = models.ForeignKey("Aluno", on_delete=models.SET_NULL, null=True, blank=True, related_name="grupos_liderados")
 
     def __str__(self):
         return self.nome
+
+    def validate_aluno_limit(self):
+        """Valida se o número de alunos não ultrapassa o limite."""
+        if self.alunos.count() > self.limite_aluno:
+            raise ValidationError(f"O grupo '{self.nome}' não pode ter mais de {self.limite_aluno} alunos.")
 
 
 class Convite(models.Model):
