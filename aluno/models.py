@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-
+from django.contrib.contenttypes.models import ContentType
 
 class Professor(models.Model):
     nome = models.CharField(max_length=100)
@@ -10,22 +10,24 @@ class Professor(models.Model):
         return self.nome
 
 
-class Turma(models.Model):
-    disciplina = models.CharField(max_length=50)
-    professor = models.ForeignKey(Professor, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.disciplina
-
-
 class Aluno(models.Model):
     nome = models.CharField(max_length=100)
-    matricula = models.AutoField(primary_key=True)
+    matricula = models.IntegerField(primary_key=True, unique=True)
     senha = models.CharField(max_length=20)
     email = models.EmailField(max_length=50)
 
     def __str__(self):
         return self.nome
+
+
+class Turma(models.Model):
+    disciplina = models.CharField(max_length=50)
+    professor = models.ForeignKey(Professor, on_delete=models.CASCADE)
+    alunos = models.ManyToManyField(Aluno)  # Relacionamento direto com Aluno
+
+    def __str__(self):
+        alunos_nomes = ", ".join(self.alunos.values_list("nome", flat=True))
+        return f"{self.disciplina} - Alunos: {alunos_nomes}" if alunos_nomes else self.disciplina
 
 
 class Grupo(models.Model):
@@ -59,13 +61,12 @@ class Item(models.Model):
     nome = models.CharField(max_length=50)
     valor = models.FloatField()
     descricao = models.TextField(max_length=200)
-    data_criacao = models.DateField()
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
+    data_criacao = models.DateField(auto_now_add=True)
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
-    professor = models.ForeignKey(Professor, on_delete=models.CASCADE)
+    quantidade_disponivel = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return self.nome
+        return f"{self.nome} (Disponível: {self.quantidade_disponivel})"
 
 
 class Compra(models.Model):
@@ -77,28 +78,20 @@ class Compra(models.Model):
         return f"{self.aluno.nome} comprou {self.item.nome} em {self.data_compra}"
 
 
+
+
 class MovimentacaoSaldo(models.Model):
-    data_movimentacao = models.DateField()
+    TIPOS_MOVIMENTACAO = [
+        ("C", "Crédito"),
+        ("D", "Débito"),
+    ]
+
+    data_movimentacao = models.DateField(auto_now_add=True)
     valor = models.IntegerField()
-    tipo = models.CharField(max_length=3)
-    aluno_remetente = models.ForeignKey(Aluno, related_name='movimentacoes_enviadas', on_delete=models.CASCADE)
-    professor = models.ForeignKey(Professor, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=1, choices=TIPOS_MOVIMENTACAO)
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name="movimentacoes")
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
+    descricao = models.TextField(max_length=255)
 
     def __str__(self):
-        return f"Movimentação {self.tipo} - {self.valor}"
-
-
-class AlunoTurma(models.Model):
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
-
-
-class AlunoGrupo(models.Model):
-    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-
-
-class AlunoMovimentacao(models.Model):
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    movimentacao = models.ForeignKey(MovimentacaoSaldo, on_delete=models.CASCADE)
+        return f"{self.get_tipo_display()} - {self.valor} ({self.aluno.nome})"

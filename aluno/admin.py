@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Professor, Turma, Aluno, Grupo, Convite, Item,
-    MovimentacaoSaldo, AlunoTurma, AlunoGrupo, AlunoMovimentacao, Compra
+    MovimentacaoSaldo, Compra
 )
 
 @admin.register(Professor)
@@ -28,7 +28,7 @@ class ConviteAdmin(admin.ModelAdmin):
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'valor', 'data_criacao', 'aluno', 'turma', 'professor')
+    list_display = ('nome', 'valor', 'data_criacao', 'turma', 'quantidade_disponivel')
     search_fields = ('nome', 'descricao')
 
 @admin.register(Compra)
@@ -38,17 +38,5 @@ class CompraAdmin(admin.ModelAdmin):
 
 @admin.register(MovimentacaoSaldo)
 class MovimentacaoSaldoAdmin(admin.ModelAdmin):
-    list_display = ('data_movimentacao', 'valor', 'tipo', 'aluno_remetente', 'professor', 'turma')
+    list_display = ('data_movimentacao', 'valor', 'tipo', 'aluno', 'turma')
     list_filter = ('tipo',)
-
-@admin.register(AlunoTurma)
-class AlunoTurmaAdmin(admin.ModelAdmin):
-    list_display = ('aluno', 'turma')
-
-@admin.register(AlunoGrupo)
-class AlunoGrupoAdmin(admin.ModelAdmin):
-    list_display = ('aluno', 'grupo')
-
-@admin.register(AlunoMovimentacao)
-class AlunoMovimentacaoAdmin(admin.ModelAdmin):
-    list_display = ('aluno', 'movimentacao')
